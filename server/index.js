@@ -29,6 +29,7 @@ console.log('PORT from env:', process.env.PORT);
 import express from 'express';
 import { WebSocketServer } from 'ws';
 import http from 'http';
+import https from 'https';
 import cors from 'cors';
 import { promises as fsPromises } from 'fs';
 import { spawn } from 'child_process';
@@ -138,7 +139,36 @@ async function setupProjectsWatcher() {
 
 
 const app = express();
-const server = http.createServer(app);
+
+// Create server based on HTTPS configuration
+let server;
+const useHttps = process.env.USE_HTTPS === 'true';
+
+if (useHttps) {
+    // Load SSL certificates
+    let httpsOptions;
+    try {
+        if (process.env.SSL_CERT_PATH && process.env.SSL_KEY_PATH) {
+            // Use custom certificates
+            httpsOptions = {
+                cert: fs.readFileSync(process.env.SSL_CERT_PATH),
+                key: fs.readFileSync(process.env.SSL_KEY_PATH)
+            };
+        } else {
+            // Generate self-signed certificate for development
+            const { generateSelfSignedCert } = await import('./utils/ssl.js');
+            httpsOptions = await generateSelfSignedCert();
+        }
+        server = https.createServer(httpsOptions, app);
+        console.log('🔐 HTTPS server enabled');
+    } catch (error) {
+        console.error('❌ Failed to setup HTTPS, falling back to HTTP:', error.message);
+        server = http.createServer(app);
+    }
+} else {
+    server = http.createServer(app);
+    console.log('🌐 HTTP server enabled');
+}
 
 // Single WebSocket server that handles both paths
 const wss = new WebSocketServer({
@@ -198,13 +228,22 @@ app.use(express.static(path.join(__dirname, '../dist')));
 // API Routes (protected)
 app.get('/api/config', authenticateToken, (req, res) => {
     const host = req.headers.host || `${req.hostname}:${PORT}`;
-    const protocol = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'wss' : 'ws';
 
-    console.log('Config API called - Returning host:', host, 'Protocol:', protocol);
+    // Determine protocol based on multiple factors
+    const isHttps = useHttps ||
+                   req.protocol === 'https' ||
+                   req.get('x-forwarded-proto') === 'https' ||
+                   req.secure ||
+                   req.connection.encrypted;
+
+    const wsProtocol = isHttps ? 'wss' : 'ws';
+
+    console.log('Config API called - Host:', host, 'HTTPS:', isHttps, 'WS Protocol:', wsProtocol);
 
     res.json({
         serverPort: PORT,
-        wsUrl: `${protocol}://${host}`
+        wsUrl: `${wsProtocol}://${host}`,
+        https: isHttps
     });
 });
 
@@ -1154,10 +1193,11 @@ async function startServer() {
         console.log('✅ Database initialization skipped (testing)');
 
         server.listen(PORT, '0.0.0.0', async () => {
-            console.log(`Claude Code UI server running on http://0.0.0.0:${PORT}`);
+            const protocol = useHttps ? 'https' : 'http';
+            console.log(`Claude Code UI server running on ${protocol}://0.0.0.0:${PORT}`);
 
             // Start watching the projects folder for changes
-            await setupProjectsWatcher(); 
+            await setupProjectsWatcher();
         });
     } catch (error) {
         console.error('❌ Failed to start server:', error);
