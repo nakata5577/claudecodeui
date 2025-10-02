@@ -687,9 +687,18 @@ function handleShellConnection(ws) {
                 try {
                     // Prepare the shell command adapted to the platform and provider
                     let shellCommand;
+                    let isInteractiveShell = false;
+
                     if (isPlainShell) {
-                        // Plain shell mode - just run the initial command in the project directory (always use Unix-style)
-                        shellCommand = `cd "${projectPath}" && ${initialCommand}`;
+                        // Check if this is an interactive shell request (e.g., 'bash', 'sh')
+                        if (initialCommand === 'bash' || initialCommand === 'sh' || !initialCommand) {
+                            // Interactive shell mode - no specific command, just open shell
+                            isInteractiveShell = true;
+                            shellCommand = null; // Will spawn shell directly
+                        } else {
+                            // Plain shell mode - just run the initial command in the project directory (always use Unix-style)
+                            shellCommand = `cd "${projectPath}" && ${initialCommand}`;
+                        }
                     } else if (provider === 'cursor') {
                         // Use cursor-agent command (always use Unix-style commands for Git Bash compatibility)
                         if (hasSession && sessionId) {
@@ -707,6 +716,7 @@ function handleShellConnection(ws) {
                         }
                     }
 
+                    console.log('🔧 Interactive shell:', isInteractiveShell);
                     console.log('🔧 Executing shell command:', shellCommand);
 
                     // Use Git Bash on Windows, bash on Unix/Linux
@@ -734,17 +744,29 @@ function handleShellConnection(ws) {
                         }
 
                         shell = gitBashPath;
-                        shellArgs = ['-l', '-c', shellCommand]; // -l for login shell (loads profile)
+
+                        // For interactive shell, use login shell without -c
+                        if (isInteractiveShell) {
+                            shellArgs = ['-l']; // Login shell, interactive
+                        } else {
+                            shellArgs = ['-l', '-c', shellCommand]; // -l for login shell (loads profile)
+                        }
                     } else {
                         shell = 'bash';
-                        shellArgs = ['-c', shellCommand];
+
+                        // For interactive shell, don't use -c
+                        if (isInteractiveShell) {
+                            shellArgs = [];
+                        } else {
+                            shellArgs = ['-c', shellCommand];
+                        }
                     }
 
                     shellProcess = pty.spawn(shell, shellArgs, {
                         name: 'xterm-256color',
                         cols: 80,
                         rows: 24,
-                        cwd: process.env.HOME || (os.platform() === 'win32' ? process.env.USERPROFILE : '/'),
+                        cwd: projectPath || process.env.HOME || (os.platform() === 'win32' ? process.env.USERPROFILE : '/'),
                         env: {
                             ...process.env,
                             TERM: 'xterm-256color',
