@@ -43,6 +43,12 @@ export default defineConfig(({ command, mode }) => {
   return {
     plugins: [react()],
     server: {
+      hmr: {
+        protocol: wsProtocol,
+        host: env.VITE_ALLOWED_HOSTS ? env.VITE_ALLOWED_HOSTS.split(',')[0].trim() : 'localhost',
+        port: parseInt(env.VITE_PORT) || 5173,
+        clientPort: parseInt(env.VITE_PORT) || 5173
+      },
       port: parseInt(env.VITE_PORT) || 5173,
       ...(allowedHosts.length > 0 && { host: true, allowedHosts }),
       ...httpsConfig,
