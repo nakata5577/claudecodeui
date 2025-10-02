@@ -217,15 +217,10 @@ async function spawnClaude(command, options = {}, ws) {
       }
     }
 
-    // Add print flag with command if we have a command
+    // Add print flag - we'll pass the command via stdin instead of arguments
+    // This avoids Windows command-line argument issues with newlines
     if (command && command.trim()) {
-
-      // Separate arguments for better cross-platform compatibility
-      // This prevents issues with spaces and quotes on Windows
       args.push('--print');
-      // Use `--` so user input is always treated as text, not options
-      args.push('--');
-      args.push(command);
     }
     
     console.log('Spawning Claude CLI:', 'claude', args.map(arg => {
@@ -244,7 +239,8 @@ async function spawnClaude(command, options = {}, ws) {
     const claudeProcess = spawnFunction(claudePath, args, {
       cwd: workingDir,
       stdio: ['pipe', 'pipe', 'pipe'],
-      env: { ...process.env } // Inherit all environment variables
+      env: { ...process.env }, // Inherit all environment variables
+      windowsVerbatimArguments: true // Disable quoting on Windows to preserve newlines
     });
     
     // Attach temp file info to process for cleanup later
@@ -364,18 +360,17 @@ async function spawnClaude(command, options = {}, ws) {
       reject(error);
     });
     
-    // Handle stdin for interactive mode
-    if (command) {
-      // For --print mode with arguments, we don't need to write to stdin
+    // Handle stdin for --print mode
+    if (command && command.trim()) {
+      // Pass command via stdin to properly handle multiline input
+      claudeProcess.stdin.write(command + '\n');
       claudeProcess.stdin.end();
+    } else if (!command) {
+      // For interactive mode without command, keep stdin open
+      // stdin will be managed externally for interactive sessions
     } else {
-      // For interactive mode, we need to write the command to stdin if provided later
-      // Keep stdin open for interactive session
-      if (command !== undefined) {
-        claudeProcess.stdin.write(command + '\n');
-        claudeProcess.stdin.end();
-      }
-      // If no command provided, stdin stays open for interactive use
+      // Empty command, just close stdin
+      claudeProcess.stdin.end();
     }
   });
 }
