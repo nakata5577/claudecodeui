@@ -1,5 +1,5 @@
 import React from 'react';
-import { MessageSquare, Folder, Terminal, GitBranch, Globe, CheckSquare } from 'lucide-react';
+import { MessageSquare, Folder, Terminal, GitBranch, Globe, CheckSquare, Zap } from 'lucide-react';
 import { useTasksSettings } from '../contexts/TasksSettingsContext';
 
 function MobileNav({ activeTab, setActiveTab, isInputFocused }) {
@@ -13,8 +13,13 @@ function MobileNav({ activeTab, setActiveTab, isInputFocused }) {
       onClick: () => setActiveTab('chat')
     },
     {
-      id: 'shell',
+      id: 'plainshell',
       icon: Terminal,
+      onClick: () => setActiveTab('plainshell')
+    },
+    {
+      id: 'shell',
+      icon: Zap,
       onClick: () => setActiveTab('shell')
     },
     {
