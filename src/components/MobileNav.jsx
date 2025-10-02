@@ -3,7 +3,7 @@ import { MessageSquare, Folder, Terminal, GitBranch, Globe, CheckSquare, Zap } f
 import { useTasksSettings } from '../contexts/TasksSettingsContext';
 
 function MobileNav({ activeTab, setActiveTab, isInputFocused }) {
-  const { tasksEnabled } = useTasksSettings();
+  const { tasksEnabled, isTaskMasterInstalled } = useTasksSettings();
   // Detect dark mode
   const isDarkMode = document.documentElement.classList.contains('dark');
   const navItems = [
@@ -32,8 +32,8 @@ function MobileNav({ activeTab, setActiveTab, isInputFocused }) {
       icon: GitBranch,
       onClick: () => setActiveTab('git')
     },
-    // Conditionally add tasks tab if enabled
-    ...(tasksEnabled ? [{
+    // Conditionally add tasks tab if enabled AND TaskMaster is installed
+    ...(tasksEnabled && isTaskMasterInstalled ? [{
       id: 'tasks',
       icon: CheckSquare,
       onClick: () => setActiveTab('tasks')

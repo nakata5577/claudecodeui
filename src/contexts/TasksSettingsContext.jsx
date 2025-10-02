@@ -23,7 +23,7 @@ export const TasksSettingsProvider = ({ children }) => {
   const [tasksEnabled, setTasksEnabled] = useState(() => {
     // Load from localStorage on initialization
     const saved = localStorage.getItem('tasks-enabled');
-    return saved !== null ? JSON.parse(saved) : true; // Default to true
+    return saved !== null ? JSON.parse(saved) : false; // Default to false
   });
   
   const [isTaskMasterInstalled, setIsTaskMasterInstalled] = useState(null);
@@ -46,22 +46,25 @@ export const TasksSettingsProvider = ({ children }) => {
           setInstallationStatus(data);
           setIsTaskMasterInstalled(data.installation?.isInstalled || false);
           setIsTaskMasterReady(data.isReady || false);
-          
-          // If TaskMaster is not installed and user hasn't explicitly enabled tasks,
-          // disable tasks automatically
-          const userEnabledTasks = localStorage.getItem('tasks-enabled');
-          if (!data.installation?.isInstalled && !userEnabledTasks) {
+
+          // If TaskMaster is not installed, force tasksEnabled to false
+          if (!data.installation?.isInstalled) {
             setTasksEnabled(false);
+            localStorage.setItem('tasks-enabled', JSON.stringify(false));
           }
         } else {
           console.error('Failed to check TaskMaster installation status');
           setIsTaskMasterInstalled(false);
           setIsTaskMasterReady(false);
+          setTasksEnabled(false);
+          localStorage.setItem('tasks-enabled', JSON.stringify(false));
         }
       } catch (error) {
         console.error('Error checking TaskMaster installation:', error);
         setIsTaskMasterInstalled(false);
         setIsTaskMasterReady(false);
+        setTasksEnabled(false);
+        localStorage.setItem('tasks-enabled', JSON.stringify(false));
       } finally {
         setIsCheckingInstallation(false);
       }
