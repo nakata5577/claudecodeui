@@ -22,6 +22,7 @@ function GitPanel({ selectedProject, isMobile }) {
   const [isCreatingBranch, setIsCreatingBranch] = useState(false);
   const [activeView, setActiveView] = useState('changes'); // 'changes' or 'history'
   const [recentCommits, setRecentCommits] = useState([]);
+  const [isLoadingCommits, setIsLoadingCommits] = useState(false);
   const [expandedCommits, setExpandedCommits] = useState(new Set());
   const [commitDiffs, setCommitDiffs] = useState({});
   const [isGeneratingMessage, setIsGeneratingMessage] = useState(false);
@@ -399,6 +400,7 @@ function GitPanel({ selectedProject, isMobile }) {
   };
 
   const fetchRecentCommits = async () => {
+    setIsLoadingCommits(true);
     try {
       const response = await authenticatedFetch(`/api/git/commits?project=${encodeURIComponent(selectedProject.name)}&limit=10`);
       const data = await response.json();
@@ -412,6 +414,8 @@ function GitPanel({ selectedProject, isMobile }) {
     } catch (error) {
       console.error('Error fetching commits:', error);
       setRecentCommits([]); // Set empty array on exception
+    } finally {
+      setIsLoadingCommits(false);
     }
   };
 
@@ -1117,7 +1121,7 @@ function GitPanel({ selectedProject, isMobile }) {
       {/* History View - Only show when git is available */}
       {activeView === 'history' && !gitStatus?.error && (
         <div className={`flex-1 overflow-y-auto ${isMobile ? 'pb-20' : ''}`}>
-          {isLoading ? (
+          {isLoadingCommits ? (
             <div className="flex items-center justify-center h-32">
               <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
             </div>
