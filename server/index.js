@@ -688,51 +688,57 @@ function handleShellConnection(ws) {
                     // Prepare the shell command adapted to the platform and provider
                     let shellCommand;
                     if (isPlainShell) {
-                        // Plain shell mode - just run the initial command in the project directory
-                        if (os.platform() === 'win32') {
-                            shellCommand = `Set-Location -Path "${projectPath}"; ${initialCommand}`;
-                        } else {
-                            shellCommand = `cd "${projectPath}" && ${initialCommand}`;
-                        }
+                        // Plain shell mode - just run the initial command in the project directory (always use Unix-style)
+                        shellCommand = `cd "${projectPath}" && ${initialCommand}`;
                     } else if (provider === 'cursor') {
-                        // Use cursor-agent command
-                        if (os.platform() === 'win32') {
-                            if (hasSession && sessionId) {
-                                shellCommand = `Set-Location -Path "${projectPath}"; cursor-agent --resume="${sessionId}"`;
-                            } else {
-                                shellCommand = `Set-Location -Path "${projectPath}"; cursor-agent`;
-                            }
+                        // Use cursor-agent command (always use Unix-style commands for Git Bash compatibility)
+                        if (hasSession && sessionId) {
+                            shellCommand = `cd "${projectPath}" && cursor-agent --resume="${sessionId}"`;
                         } else {
-                            if (hasSession && sessionId) {
-                                shellCommand = `cd "${projectPath}" && cursor-agent --resume="${sessionId}"`;
-                            } else {
-                                shellCommand = `cd "${projectPath}" && cursor-agent`;
-                            }
+                            shellCommand = `cd "${projectPath}" && cursor-agent`;
                         }
                     } else {
-                        // Use claude command (default) or initialCommand if provided
+                        // Use claude command (default) or initialCommand if provided (always use Unix-style commands)
                         const command = initialCommand || 'claude';
-                        if (os.platform() === 'win32') {
-                            if (hasSession && sessionId) {
-                                // Try to resume session, but with fallback to new session if it fails
-                                shellCommand = `Set-Location -Path "${projectPath}"; claude --resume ${sessionId}; if ($LASTEXITCODE -ne 0) { claude }`;
-                            } else {
-                                shellCommand = `Set-Location -Path "${projectPath}"; ${command}`;
-                            }
+                        if (hasSession && sessionId) {
+                            shellCommand = `cd "${projectPath}" && claude --resume ${sessionId} || claude`;
                         } else {
-                            if (hasSession && sessionId) {
-                                shellCommand = `cd "${projectPath}" && claude --resume ${sessionId} || claude`;
-                            } else {
-                                shellCommand = `cd "${projectPath}" && ${command}`;
-                            }
+                            shellCommand = `cd "${projectPath}" && ${command}`;
                         }
                     }
 
                     console.log('🔧 Executing shell command:', shellCommand);
 
-                    // Use appropriate shell based on platform
-                    const shell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
-                    const shellArgs = os.platform() === 'win32' ? ['-Command', shellCommand] : ['-c', shellCommand];
+                    // Use Git Bash on Windows, bash on Unix/Linux
+                    let shell, shellArgs;
+                    if (os.platform() === 'win32') {
+                        // Try to find Git Bash in common installation paths
+                        const gitBashPaths = [
+                            'C:\\Program Files\\Git\\bin\\bash.exe',
+                            'C:\\Program Files (x86)\\Git\\bin\\bash.exe',
+                            path.join(process.env.PROGRAMFILES || 'C:\\Program Files', 'Git', 'bin', 'bash.exe'),
+                            path.join(process.env['PROGRAMFILES(X86)'] || 'C:\\Program Files (x86)', 'Git', 'bin', 'bash.exe')
+                        ];
+
+                        let gitBashPath = null;
+                        for (const bashPath of gitBashPaths) {
+                            if (fs.existsSync(bashPath)) {
+                                gitBashPath = bashPath;
+                                break;
+                            }
+                        }
+
+                        if (!gitBashPath) {
+                            // Fallback to 'bash' command (assumes it's in PATH)
+                            gitBashPath = 'bash';
+                        }
+
+                        shell = gitBashPath;
+                        shellArgs = ['-l', '-c', shellCommand]; // -l for login shell (loads profile)
+                    } else {
+                        shell = 'bash';
+                        shellArgs = ['-c', shellCommand];
+                    }
 
                     shellProcess = pty.spawn(shell, shellArgs, {
                         name: 'xterm-256color',
