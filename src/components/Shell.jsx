@@ -610,10 +610,10 @@ function Shell({ selectedProject, selectedSession, isActive, initialCommand, isP
         {/* Connect button when not connected */}
         {isInitialized && !isConnected && !isConnecting && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-90 p-4">
-            <div className="text-center max-w-sm w-full">
+            <div className="text-center max-w-sm w-full flex flex-col items-center">
               <button
                 onClick={connectToShell}
-                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2 text-base font-medium w-full sm:w-auto"
+                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2 text-base font-medium"
                 title="Connect to shell"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -622,15 +622,15 @@ function Shell({ selectedProject, selectedSession, isActive, initialCommand, isP
                 <span>Continue in Shell</span>
               </button>
               <p className="text-gray-400 text-sm mt-3 px-2">
-                {isPlainShell ? 
+                {isPlainShell ?
                   `Run ${initialCommand || 'command'} in ${selectedProject.displayName}` :
-                  selectedSession ? 
+                  selectedSession ?
                     (() => {
                       const displaySessionName = selectedSession.__provider === 'cursor'
                         ? (selectedSession.name || 'Untitled Session')
                         : (selectedSession.summary || 'New Session');
                       return `Resume session: ${displaySessionName.slice(0, 50)}...`;
-                    })() : 
+                    })() :
                     'Start a new Claude session'
                 }
               </p>
