@@ -619,7 +619,7 @@ function Shell({ selectedProject, selectedSession, isActive, initialCommand, isP
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
-                <span>Continue in Shell</span>
+                <span>{isPlainShell ? 'Start Terminal' : 'Continue in Shell'}</span>
               </button>
               <p className="text-gray-400 text-sm mt-3 px-2">
                 {isPlainShell ?
