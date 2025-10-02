@@ -58,7 +58,11 @@ function AppContent() {
   const [autoExpandTools, setAutoExpandTools] = useLocalStorage('autoExpandTools', false);
   const [showRawParameters, setShowRawParameters] = useLocalStorage('showRawParameters', false);
   const [autoScrollToBottom, setAutoScrollToBottom] = useLocalStorage('autoScrollToBottom', true);
-  const [sendByCtrlEnter, setSendByCtrlEnter] = useLocalStorage('sendByCtrlEnter', false);
+  // Default to true on mobile devices (easier to add new lines with Enter, send with Ctrl+Enter)
+  const [sendByCtrlEnter, setSendByCtrlEnter] = useLocalStorage(
+    'sendByCtrlEnter',
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  );
   // Session Protection System: Track sessions with active conversations to prevent
   // automatic project updates from interrupting ongoing chats. When a user sends
   // a message, the session is marked as "active" and project updates are paused
