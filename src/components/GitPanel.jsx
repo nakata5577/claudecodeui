@@ -402,12 +402,16 @@ function GitPanel({ selectedProject, isMobile }) {
     try {
       const response = await authenticatedFetch(`/api/git/commits?project=${encodeURIComponent(selectedProject.name)}&limit=10`);
       const data = await response.json();
-      
+
       if (!data.error && data.commits) {
         setRecentCommits(data.commits);
+      } else {
+        console.error('Error fetching commits:', data.error || 'Unknown error');
+        setRecentCommits([]); // Set empty array on error
       }
     } catch (error) {
       console.error('Error fetching commits:', error);
+      setRecentCommits([]); // Set empty array on exception
     }
   };
 

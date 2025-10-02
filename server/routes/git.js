@@ -278,10 +278,14 @@ router.get('/commits', async (req, res) => {
 
   try {
     const projectPath = await getActualProjectPath(project);
-    
+
+    // Validate git repository
+    await validateGitRepository(projectPath);
+
     // Get commit log with stats
+    // Use double quotes for Windows compatibility
     const { stdout } = await execAsync(
-      `git log --pretty=format:'%H|%an|%ae|%ad|%s' --date=relative -n ${limit}`,
+      `git log --pretty=format:"%H|%an|%ae|%ad|%s" --date=relative -n ${limit}`,
       { cwd: projectPath }
     );
     
