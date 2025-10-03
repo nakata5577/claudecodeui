@@ -50,7 +50,7 @@ const QuickSettingsPanel = ({
     <>
       {/* Pull Tab */}
       <div
-        className={`fixed ${isMobile ? 'bottom-44' : 'top-1/2 -translate-y-1/2'} ${
+        className={`fixed top-1/2 -translate-y-1/2 ${
           localIsOpen ? 'right-64' : 'right-0'
         } z-50 transition-all duration-150 ease-out`}
       >
