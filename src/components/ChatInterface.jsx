@@ -2799,22 +2799,34 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
       });
     }
 
+    // Clear the saved draft since message was sent
+    if (selectedProject) {
+      safeLocalStorage.removeItem(`draft_input_${selectedProject.name}`);
+    }
+
+    // Reset textarea height first
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
+
+    // Update all states
     setInput('');
     setAttachedImages([]);
     setUploadingImages(new Map());
     setImageErrors(new Map());
     setIsTextareaExpanded(false);
-    
-    // Reset textarea height
 
+    // Immediately update focus state to show mobile nav
+    setIsInputFocused(false);
 
+    // Blur textarea to hide keyboard (after state update to prevent race condition)
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-    }
-    
-    // Clear the saved draft since message was sent
-    if (selectedProject) {
-      safeLocalStorage.removeItem(`draft_input_${selectedProject.name}`);
+      // Use requestAnimationFrame to ensure state update is processed first
+      requestAnimationFrame(() => {
+        if (textareaRef.current) {
+          textareaRef.current.blur();
+        }
+      });
     }
   };
 
